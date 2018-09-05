@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View, Button, Image } from 'react-native';
-import { TabNavigator, TabBarBottom } from 'react-navigation';
+import { createBottomTabNavigator, BottomTabBar } from 'react-navigation';
 import { Ionicons } from '@expo/vector-icons';
 
 import ScheduleNav from './ScheduleNav'
 
-const TabNav = TabNavigator(
+const TabBarComponent = (props) => (<BottomTabBar {...props} />);
+const TabNav = createBottomTabNavigator(
   {
     Schedule: { screen: ScheduleNav},
   },
@@ -20,17 +21,14 @@ const TabNav = TabNavigator(
         return <Ionicons name={iconName} size={25} color={tintColor} />;
       },
     }),
-    tabBarComponent: TabBarBottom,
     tabBarPosition: 'bottom',
     tabBarOptions: {
       activeTintColor: 'red',
       inactiveTintColor: 'grey',
       style: {
-        backgroundColor: 'white'
+        backgroundColor: 'blue'
       }
     },
-    animationEnabled: false,
-    swipeEnabled: false,
   }
 );
 

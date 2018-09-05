@@ -7,7 +7,11 @@ export default class SplashPage extends Component {
     const { navigate } = this.props.navigation;
     return (
           <View style={styles.splashscreen}>
-            <Text> Hello World </Text>
+            <View>
+              <TouchableOpacity onPress={() => navigate('TabNav')}>
+                <Text> Hello World </Text>
+              </TouchableOpacity>
+            </View>
           </View>
     );
   }
