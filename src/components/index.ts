@@ -3,3 +3,8 @@ export { GoogleSignInButton } from './GoogleSignInButton';
 export { CategoryBadge } from './CategoryBadge';
 export { CategoryPicker } from './CategoryPicker';
 export { UncategorizedBanner } from './UncategorizedBanner';
+export { TimePeriodSelector } from './TimePeriodSelector';
+export { DateSectionHeader } from './DateSectionHeader';
+export { FloatingActionButton } from './FloatingActionButton';
+export { AddEventModal } from './AddEventModal';
+export type { EventFormData } from './AddEventModal';

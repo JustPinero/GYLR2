@@ -55,6 +55,7 @@ export interface JudgmentResponse {
 export type RootTabParamList = {
   Calendar: undefined;
   Life: undefined;
+  Settings: undefined;
 };
 
 // ============================================

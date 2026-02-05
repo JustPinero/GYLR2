@@ -1,11 +1,12 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import {
   StyleSheet,
   View,
   Text,
-  FlatList,
+  SectionList,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppSelector, useAppDispatch } from '../hooks';
@@ -13,34 +14,88 @@ import {
   selectAllEvents,
   selectEventsLoading,
   selectEventsError,
+  selectEventsCreating,
   selectUncategorizedEvents,
   fetchCalendarEvents,
   updateEventCategory,
+  createCalendarEvent,
 } from '../store/eventsSlice';
 import {
   selectAccessToken,
   selectTimePeriod,
+  setTimePeriod,
 } from '../store/settingsSlice';
 import { saveMapping } from '../store/categoriesSlice';
-import { CategoryPicker, UncategorizedBanner, CategoryBadge } from '../components';
-import { CategorizedEvent, Category } from '../types';
+import {
+  CategoryPicker,
+  UncategorizedBanner,
+  CategoryBadge,
+  TimePeriodSelector,
+  DateSectionHeader,
+  FloatingActionButton,
+  AddEventModal,
+} from '../components';
+import type { EventFormData } from '../components';
+import { CategorizedEvent, Category, TimePeriod } from '../types';
 import { extractPattern } from '../services/categorization';
-import { formatDateShort, formatTime, formatDuration, getDurationMinutes } from '../utils/dateUtils';
+import {
+  formatTime,
+  formatDuration,
+  getDurationMinutes,
+  isToday,
+  getDateKey,
+} from '../utils/dateUtils';
 import { colors } from '../constants/colors';
+
+// Section type for SectionList
+interface EventSection {
+  date: string;
+  displayDate: Date;
+  isToday: boolean;
+  data: CategorizedEvent[];
+}
+
+// Group events by date
+function groupEventsByDate(events: CategorizedEvent[]): EventSection[] {
+  const groups = new Map<string, CategorizedEvent[]>();
+
+  events.forEach((event) => {
+    const dateKey = getDateKey(event.startTime);
+    const existing = groups.get(dateKey) ?? [];
+    groups.set(dateKey, [...existing, event]);
+  });
+
+  return Array.from(groups.entries())
+    .map(([dateKey, data]) => {
+      const displayDate = new Date(dateKey + 'T12:00:00');
+      return {
+        date: dateKey,
+        displayDate,
+        isToday: isToday(displayDate),
+        data: data.sort((a, b) => a.startTime.getTime() - b.startTime.getTime()),
+      };
+    })
+    .sort((a, b) => a.displayDate.getTime() - b.displayDate.getTime());
+}
 
 export function CalendarScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const events = useAppSelector(selectAllEvents);
   const uncategorizedEvents = useAppSelector(selectUncategorizedEvents);
   const loading = useAppSelector(selectEventsLoading);
+  const creating = useAppSelector(selectEventsCreating);
   const error = useAppSelector(selectEventsError);
   const accessToken = useAppSelector(selectAccessToken);
   const timePeriod = useAppSelector(selectTimePeriod);
 
-  // Modal state
+  // Modal states
   const [selectedEvent, setSelectedEvent] = useState<CategorizedEvent | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Group events by date
+  const sections = useMemo(() => groupEventsByDate(events), [events]);
 
   const loadEvents = useCallback(() => {
     if (accessToken) {
@@ -59,6 +114,10 @@ export function CalendarScreen(): React.JSX.Element {
     }
   }, [uncategorizedEvents.length]);
 
+  const handleTimePeriodChange = (period: TimePeriod): void => {
+    dispatch(setTimePeriod(period));
+  };
+
   const handleEventPress = (event: CategorizedEvent): void => {
     setSelectedEvent(event);
     setPickerVisible(true);
@@ -67,13 +126,11 @@ export function CalendarScreen(): React.JSX.Element {
   const handleCategorySelect = (category: Category, remember: boolean): void => {
     if (!selectedEvent) return;
 
-    // Update the event category in Redux
     dispatch(updateEventCategory({
       eventId: selectedEvent.id,
       category,
     }));
 
-    // If remember is checked, save the mapping
     if (remember) {
       const pattern = extractPattern(selectedEvent.title);
       if (pattern) {
@@ -91,7 +148,6 @@ export function CalendarScreen(): React.JSX.Element {
   };
 
   const handleBannerPress = (): void => {
-    // Open picker for the first uncategorized event
     if (uncategorizedEvents.length > 0) {
       const firstUncategorized = uncategorizedEvents[0];
       if (firstUncategorized) {
@@ -105,6 +161,46 @@ export function CalendarScreen(): React.JSX.Element {
     setBannerDismissed(true);
   };
 
+  const handleAddPress = (): void => {
+    setAddModalVisible(true);
+  };
+
+  const handleAddModalClose = (): void => {
+    setAddModalVisible(false);
+  };
+
+  const handleAddEventSubmit = async (formData: EventFormData): Promise<void> => {
+    if (!accessToken) {
+      Alert.alert('Error', 'Not authenticated');
+      return;
+    }
+
+    try {
+      await dispatch(createCalendarEvent({
+        accessToken,
+        title: formData.title,
+        description: formData.description || undefined,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        isAllDay: formData.isAllDay,
+        category: formData.category,
+      })).unwrap();
+
+      setAddModalVisible(false);
+      Alert.alert('Success', 'Event created successfully!');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to create event. Please try again.');
+    }
+  };
+
+  const renderSectionHeader = ({ section }: { section: EventSection }): React.JSX.Element => (
+    <DateSectionHeader
+      date={section.displayDate}
+      eventCount={section.data.length}
+      isToday={section.isToday}
+    />
+  );
+
   const renderEvent = ({ item }: { item: CategorizedEvent }): React.JSX.Element => (
     <EventCard event={item} onPress={() => handleEventPress(item)} />
   );
@@ -115,7 +211,7 @@ export function CalendarScreen(): React.JSX.Element {
       <Text style={styles.emptyTitle}>No Events</Text>
       <Text style={styles.emptySubtitle}>
         No events found for this {timePeriod}.{'\n'}
-        Pull down to refresh.
+        Tap + to add a new event.
       </Text>
     </View>
   );
@@ -141,11 +237,20 @@ export function CalendarScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Your Events</Text>
         <Text style={styles.headerSubtitle}>
           {events.length} event{events.length !== 1 ? 's' : ''} this {timePeriod}
         </Text>
+      </View>
+
+      {/* Time Period Selector */}
+      <View style={styles.selectorContainer}>
+        <TimePeriodSelector
+          selected={timePeriod}
+          onSelect={handleTimePeriodChange}
+        />
       </View>
 
       {/* Uncategorized Banner */}
@@ -157,13 +262,15 @@ export function CalendarScreen(): React.JSX.Element {
         />
       )}
 
-      <FlatList
-        data={events}
+      {/* Events List */}
+      <SectionList
+        sections={sections}
         renderItem={renderEvent}
+        renderSectionHeader={renderSectionHeader}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContent,
-          events.length === 0 && styles.listContentEmpty,
+          sections.length === 0 && styles.listContentEmpty,
         ]}
         ListEmptyComponent={renderEmptyState}
         refreshControl={
@@ -175,7 +282,11 @@ export function CalendarScreen(): React.JSX.Element {
           />
         }
         showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
       />
+
+      {/* Floating Action Button */}
+      <FloatingActionButton onPress={handleAddPress} />
 
       {/* Category Picker Modal */}
       <CategoryPicker
@@ -183,6 +294,14 @@ export function CalendarScreen(): React.JSX.Element {
         event={selectedEvent}
         onSelect={handleCategorySelect}
         onClose={handlePickerClose}
+      />
+
+      {/* Add Event Modal */}
+      <AddEventModal
+        visible={addModalVisible}
+        onClose={handleAddModalClose}
+        onSubmit={handleAddEventSubmit}
+        loading={creating}
       />
     </SafeAreaView>
   );
@@ -216,7 +335,6 @@ function EventCard({ event, onPress }: EventCardProps): React.JSX.Element {
           )}
           <Text style={styles.eventDuration}>{formatDuration(duration)}</Text>
         </View>
-        <Text style={styles.eventDate}>{formatDateShort(event.startTime)}</Text>
       </View>
       <View style={styles.categoryContainer}>
         <CategoryBadge
@@ -238,9 +356,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.border,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 20,
@@ -252,8 +369,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
   },
+  selectorContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
   listContent: {
     padding: 16,
+    paddingBottom: 100, // Space for FAB
   },
   listContentEmpty: {
     flex: 1,
@@ -321,7 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     borderColor: colors.border,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
   },
   eventContent: {
@@ -329,7 +451,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   eventTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
@@ -337,24 +459,19 @@ const styles = StyleSheet.create({
   eventDetails: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
   },
   eventTime: {
     fontSize: 13,
     color: colors.textSecondary,
-    marginRight: 12,
+    marginRight: 10,
   },
   eventDuration: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
     backgroundColor: colors.bgTertiary,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-  },
-  eventDate: {
-    fontSize: 12,
-    color: colors.textMuted,
   },
   categoryContainer: {
     padding: 12,

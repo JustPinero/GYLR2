@@ -166,3 +166,40 @@ export function toGoogleDateTime(date: Date, allDay = false): GoogleDateTime {
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 }
+
+/**
+ * Check if a date is today
+ */
+export function isToday(date: Date): boolean {
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}
+
+/**
+ * Get date key for grouping (YYYY-MM-DD)
+ */
+export function getDateKey(date: Date): string {
+  return date.toISOString().split('T')[0] ?? '';
+}
+
+/**
+ * Combine date and time into a single Date object
+ */
+export function combineDateAndTime(date: Date, time: Date): Date {
+  const result = new Date(date);
+  result.setHours(time.getHours(), time.getMinutes(), 0, 0);
+  return result;
+}
+
+/**
+ * Add hours to a date
+ */
+export function addHours(date: Date, hours: number): Date {
+  const result = new Date(date);
+  result.setTime(result.getTime() + hours * 60 * 60 * 1000);
+  return result;
+}

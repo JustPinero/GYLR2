@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { CategorizedEvent, Category, CalendarEvent, TimePeriod } from '../types';
-import { fetchEvents as fetchGoogleEvents } from '../services/googleCalendar';
+import { CategorizedEvent, Category, CalendarEvent, TimePeriod, CreateEventPayload } from '../types';
+import { fetchEvents as fetchGoogleEvents, createEvent as createGoogleEvent } from '../services/googleCalendar';
 import { categoryKeywords } from '../constants/keywords';
+import { toGoogleDateTime } from '../utils/dateUtils';
 import {
   startOfDay,
   endOfDay,
@@ -17,6 +18,7 @@ import type { RootState } from './index';
 interface EventsState {
   events: CategorizedEvent[];
   loading: boolean;
+  creating: boolean;
   error: string | null;
   lastSynced: string | null;
 }
@@ -24,6 +26,7 @@ interface EventsState {
 const initialState: EventsState = {
   events: [],
   loading: false,
+  creating: false,
   error: null,
   lastSynced: null,
 };
@@ -111,6 +114,50 @@ export const fetchCalendarEvents = createAsyncThunk<
   }
 );
 
+// Interface for create event params
+interface CreateEventParams {
+  accessToken: string;
+  title: string;
+  description?: string;
+  startTime: Date;
+  endTime: Date;
+  isAllDay: boolean;
+  category: Category;
+}
+
+// Async thunk to create a new calendar event
+export const createCalendarEvent = createAsyncThunk<
+  CategorizedEvent,
+  CreateEventParams,
+  { rejectValue: string }
+>(
+  'events/createCalendarEvent',
+  async ({ accessToken, title, description, startTime, endTime, isAllDay, category }, { rejectWithValue }) => {
+    try {
+      const eventPayload: CreateEventPayload = {
+        summary: title,
+        description,
+        start: toGoogleDateTime(startTime, isAllDay),
+        end: toGoogleDateTime(endTime, isAllDay),
+      };
+
+      const createdEvent = await createGoogleEvent(accessToken, eventPayload);
+
+      // Return as categorized event
+      const categorizedEvent: CategorizedEvent = {
+        ...createdEvent,
+        category,
+        categoryConfirmed: true,
+      };
+
+      return categorizedEvent;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create event';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const eventsSlice = createSlice({
   name: 'events',
   initialState,
@@ -149,6 +196,7 @@ const eventsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch events
       .addCase(fetchCalendarEvents.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -162,6 +210,21 @@ const eventsSlice = createSlice({
       .addCase(fetchCalendarEvents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Failed to fetch events';
+      })
+      // Create event
+      .addCase(createCalendarEvent.pending, (state) => {
+        state.creating = true;
+        state.error = null;
+      })
+      .addCase(createCalendarEvent.fulfilled, (state, action) => {
+        state.events.push(action.payload);
+        // Sort events by start time
+        state.events.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+        state.creating = false;
+      })
+      .addCase(createCalendarEvent.rejected, (state, action) => {
+        state.creating = false;
+        state.error = action.payload ?? 'Failed to create event';
       });
   },
 });
@@ -183,6 +246,9 @@ export const selectAllEvents = (state: RootState): CategorizedEvent[] =>
 
 export const selectEventsLoading = (state: RootState): boolean =>
   state.events.loading;
+
+export const selectEventsCreating = (state: RootState): boolean =>
+  state.events.creating;
 
 export const selectEventsError = (state: RootState): string | null =>
   state.events.error;

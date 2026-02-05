@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CalendarScreen, LifeScreen } from '../screens';
+import { Text, View, StyleSheet } from 'react-native';
+import { CalendarScreen, LifeScreen, SettingsScreen } from '../screens';
 import { colors } from '../constants/colors';
 import type { RootTabParamList } from '../types';
 
@@ -22,16 +23,16 @@ export function TabNavigator(): React.JSX.Element {
           backgroundColor: colors.tabBarBackground,
           borderTopWidth: 2,
           borderTopColor: colors.border,
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 70,
+          paddingTop: 6,
+          paddingBottom: 6,
+          height: 65,
         },
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
-          marginTop: 4,
+          marginTop: 2,
         },
       }}
     >
@@ -41,7 +42,6 @@ export function TabNavigator(): React.JSX.Element {
         options={{
           title: 'Calendar',
           tabBarLabel: 'Calendar',
-          // TODO: Add pixel art calendar icon
           tabBarIcon: ({ color }) => (
             <TabIcon label="📅" color={color} />
           ),
@@ -53,18 +53,25 @@ export function TabNavigator(): React.JSX.Element {
         options={{
           title: 'Life Panel',
           tabBarLabel: 'Life',
-          // TODO: Add pixel art life/chart icon
           tabBarIcon: ({ color }) => (
             <TabIcon label="📊" color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Settings',
+          tabBarLabel: 'Settings',
+          tabBarIcon: ({ color }) => (
+            <TabIcon label="⚙️" color={color} />
           ),
         }}
       />
     </Tab.Navigator>
   );
 }
-
-// Temporary icon component until pixel art icons are added
-import { Text, View, StyleSheet } from 'react-native';
 
 interface TabIconProps {
   label: string;
@@ -85,6 +92,6 @@ const iconStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   emoji: {
-    fontSize: 24,
+    fontSize: 22,
   },
 });
