@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { JudgePersonality } from '../types';
 import { colors } from '../constants/colors';
+import { hapticSelection } from '../utils/haptics';
 
 interface PersonalityPickerProps {
   selected: JudgePersonality;
@@ -39,6 +40,11 @@ export function PersonalityPicker({
   selected,
   onSelect,
 }: PersonalityPickerProps): React.JSX.Element {
+  const handleSelect = (id: JudgePersonality): void => {
+    hapticSelection();
+    onSelect(id);
+  };
+
   return (
     <View style={styles.container}>
       {personalities.map((personality) => {
@@ -48,7 +54,7 @@ export function PersonalityPicker({
           <TouchableOpacity
             key={personality.id}
             style={[styles.option, isSelected && styles.optionSelected]}
-            onPress={() => onSelect(personality.id)}
+            onPress={() => handleSelect(personality.id)}
             activeOpacity={0.7}
           >
             {/* Radio indicator */}

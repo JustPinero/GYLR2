@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { JudgePersonality } from '../types';
 import { PixelButton } from './PixelButton';
 import { colors } from '../constants/colors';
 import { LOADING_MESSAGES } from '../constants/prompts';
+import { hapticSuccess, hapticError } from '../utils/haptics';
 
 interface JudgmentCardProps {
   judgment: string | null;
@@ -32,6 +33,8 @@ export function JudgmentCard({
 
   // Rotating loading message
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const prevJudgment = useRef(judgment);
+  const prevError = useRef(error);
 
   useEffect(() => {
     if (!loading) {
@@ -45,6 +48,21 @@ export function JudgmentCard({
 
     return () => clearInterval(interval);
   }, [loading]);
+
+  // Haptic feedback when judgment or error changes
+  useEffect(() => {
+    if (judgment && judgment !== prevJudgment.current) {
+      hapticSuccess();
+    }
+    prevJudgment.current = judgment;
+  }, [judgment]);
+
+  useEffect(() => {
+    if (error && error !== prevError.current) {
+      hapticError();
+    }
+    prevError.current = error;
+  }, [error]);
 
   const loadingMessage = LOADING_MESSAGES[loadingMessageIndex];
 

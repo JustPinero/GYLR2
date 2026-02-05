@@ -7,6 +7,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { colors } from '../constants/colors';
+import { hapticButtonPress } from '../utils/haptics';
 
 interface PixelButtonProps {
   title: string;
@@ -42,10 +43,15 @@ export function PixelButton({
     textStyle,
   ];
 
+  const handlePress = (): void => {
+    hapticButtonPress();
+    onPress();
+  };
+
   return (
     <TouchableOpacity
       style={buttonStyle}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isDisabled}
       activeOpacity={0.7}
     >

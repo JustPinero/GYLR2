@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { store } from './src/store';
 import { TabNavigator } from './src/navigation';
-import { AuthScreen } from './src/screens';
+import { AuthScreen, OnboardingScreen, hasOnboarded } from './src/screens';
 import { useAppSelector, useAppDispatch, useAppFonts } from './src/hooks';
 import {
   selectIsAuthenticated,
@@ -61,9 +61,22 @@ function AppContent(): React.JSX.Element {
   const authLoading = useAppSelector(selectAuthLoading);
   const { fontsLoaded, fontError } = useAppFonts();
 
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
   useEffect(() => {
     checkStoredAuth();
+    checkOnboarding();
   }, []);
+
+  const checkOnboarding = async (): Promise<void> => {
+    const onboarded = await hasOnboarded();
+    setShowOnboarding(!onboarded);
+  };
+
+  const handleOnboardingComplete = (): void => {
+    setShowOnboarding(false);
+  };
 
   // Hide splash screen when fonts are loaded and auth check is complete
   useEffect(() => {
@@ -133,8 +146,8 @@ function AppContent(): React.JSX.Element {
     }
   };
 
-  // Show loading screen while checking auth or loading fonts
-  if (authLoading || !fontsLoaded) {
+  // Show loading screen while checking auth, fonts, or onboarding status
+  if (authLoading || !fontsLoaded || showOnboarding === null) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -143,6 +156,11 @@ function AppContent(): React.JSX.Element {
         )}
       </View>
     );
+  }
+
+  // Show onboarding for first-time users
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
 
   // Show auth screen if not authenticated

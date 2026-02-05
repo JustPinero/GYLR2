@@ -14,3 +14,5 @@ export { CategoryLegend } from './CategoryLegend';
 export { StatsSummary } from './StatsSummary';
 export { JudgmentCard } from './JudgmentCard';
 export { PersonalityPicker } from './PersonalityPicker';
+export { ErrorBanner } from './ErrorBanner';
+export { OfflineBanner } from './OfflineBanner';

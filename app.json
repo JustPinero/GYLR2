@@ -13,9 +13,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#2C2137"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.gylr.app"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.gylr.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "GYLR uses your calendar to show how you spend your time and provide personalized insights.",
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,13 +31,32 @@
         "backgroundColor": "#2C2137"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.gylr.app"
+      "package": "com.gylr.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#2C2137",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
+    "owner": "your-expo-username"
   }
 }
