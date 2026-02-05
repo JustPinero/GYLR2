@@ -1,4 +1,5 @@
 export { PixelButton } from './PixelButton';
+export { PixelCard } from './PixelCard';
 export { GoogleSignInButton } from './GoogleSignInButton';
 export { CategoryBadge } from './CategoryBadge';
 export { CategoryPicker } from './CategoryPicker';
@@ -12,3 +13,4 @@ export { TimeAllocationChart } from './TimeAllocationChart';
 export { CategoryLegend } from './CategoryLegend';
 export { StatsSummary } from './StatsSummary';
 export { JudgmentCard } from './JudgmentCard';
+export { PersonalityPicker } from './PersonalityPicker';

@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 4,
-    borderWidth: 1,
+    borderRadius: 2,
+    borderWidth: 2,
   },
   icon: {
     // fontSize set dynamically

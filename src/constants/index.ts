@@ -6,3 +6,4 @@ export {
   getRandomLoadingMessage,
   LOADING_MESSAGES,
 } from './prompts';
+export { fonts, fontSizes, typography } from './fonts';

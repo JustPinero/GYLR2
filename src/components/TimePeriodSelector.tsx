@@ -56,41 +56,42 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.bgSecondary,
-    borderRadius: 8,
-    borderWidth: 2,
+    borderRadius: 2,
+    borderWidth: 3,
     borderColor: colors.border,
     overflow: 'hidden',
   },
   button: {
     flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRightWidth: 1,
+    borderRightWidth: 2,
     borderRightColor: colors.border,
   },
   buttonFirst: {
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
+    // No special radius for pixel style
   },
   buttonLast: {
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
     borderRightWidth: 0,
   },
   buttonSelected: {
     backgroundColor: colors.accent,
+    // Pixel-style inset effect
+    borderTopColor: '#FFE066',
+    borderLeftColor: '#FFE066',
+    borderBottomColor: '#B8960D',
+    borderRightColor: '#B8960D',
   },
   buttonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: 'bold',
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   buttonTextSelected: {
     color: colors.bgPrimary,
-    fontWeight: 'bold',
   },
 });

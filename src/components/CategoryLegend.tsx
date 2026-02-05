@@ -69,8 +69,8 @@ function LegendItem({ allocation, onPress }: LegendItemProps): React.JSX.Element
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.bgSecondary,
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 2,
+    borderWidth: 3,
     borderColor: colors.border,
     overflow: 'hidden',
   },
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: colors.border,
   },
   itemEmpty: {
@@ -94,8 +94,10 @@ const styles = StyleSheet.create({
   colorDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: 2,
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.2)',
   },
   icon: {
     fontSize: 16,

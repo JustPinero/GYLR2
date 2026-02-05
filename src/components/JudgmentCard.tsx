@@ -105,8 +105,8 @@ export function JudgmentCard({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.bgSecondary,
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 2,
+    borderWidth: 3,
     borderColor: colors.border,
     overflow: 'hidden',
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 2,
+    borderBottomWidth: 3,
     borderBottomColor: colors.border,
     backgroundColor: colors.bgTertiary,
   },

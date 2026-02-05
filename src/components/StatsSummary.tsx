@@ -89,8 +89,8 @@ export function StatsSummary({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.bgSecondary,
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 2,
+    borderWidth: 3,
     borderColor: colors.border,
     padding: 16,
   },
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   divider: {
-    height: 1,
+    height: 2,
     backgroundColor: colors.border,
     marginVertical: 12,
   },

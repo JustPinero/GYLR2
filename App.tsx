@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { store } from './src/store';
 import { TabNavigator } from './src/navigation';
 import { AuthScreen } from './src/screens';
-import { useAppSelector, useAppDispatch } from './src/hooks';
+import { useAppSelector, useAppDispatch, useAppFonts } from './src/hooks';
 import {
   selectIsAuthenticated,
   selectAuthLoading,
@@ -19,6 +20,9 @@ import {
 import { loadStoredMappings } from './src/store/categoriesSlice';
 import { getStoredTokens, getStoredUserInfo, isTokenExpired, refreshAccessToken } from './src/services/googleAuth';
 import { colors } from './src/constants/colors';
+
+// Keep splash screen visible while loading
+SplashScreen.preventAutoHideAsync();
 
 // Navigation theme
 const navigationTheme = {
@@ -55,10 +59,18 @@ function AppContent(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const authLoading = useAppSelector(selectAuthLoading);
+  const { fontsLoaded, fontError } = useAppFonts();
 
   useEffect(() => {
     checkStoredAuth();
   }, []);
+
+  // Hide splash screen when fonts are loaded and auth check is complete
+  useEffect(() => {
+    if (fontsLoaded && !authLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, authLoading]);
 
   const checkStoredAuth = async (): Promise<void> => {
     try {
@@ -121,11 +133,14 @@ function AppContent(): React.JSX.Element {
     }
   };
 
-  // Show loading screen while checking auth
-  if (authLoading) {
+  // Show loading screen while checking auth or loading fonts
+  if (authLoading || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.accent} />
+        {fontError && (
+          <Text style={styles.errorText}>Font loading error</Text>
+        )}
       </View>
     );
   }
@@ -160,5 +175,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgPrimary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorText: {
+    color: colors.error,
+    marginTop: 12,
+    fontSize: 14,
   },
 });
