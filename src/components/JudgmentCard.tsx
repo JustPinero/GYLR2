@@ -1,11 +1,14 @@
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { JudgePersonality } from '../types';
 import { PixelButton } from './PixelButton';
 import { colors } from '../constants/colors';
+import { LOADING_MESSAGES } from '../constants/prompts';
 
 interface JudgmentCardProps {
   judgment: string | null;
   loading: boolean;
+  error: string | null;
   onRequestJudgment: () => void;
   personality: JudgePersonality;
   disabled?: boolean;
@@ -20,11 +23,30 @@ const personalityInfo: Record<JudgePersonality, { icon: string; name: string }> 
 export function JudgmentCard({
   judgment,
   loading,
+  error,
   onRequestJudgment,
   personality,
   disabled = false,
 }: JudgmentCardProps): React.JSX.Element {
   const { icon, name } = personalityInfo[personality];
+
+  // Rotating loading message
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  const loadingMessage = LOADING_MESSAGES[loadingMessageIndex];
 
   return (
     <View style={styles.container}>
@@ -45,7 +67,12 @@ export function JudgmentCard({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={styles.loadingText}>Judging your life choices...</Text>
+            <Text style={styles.loadingText}>{loadingMessage}</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>😬</Text>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : judgment ? (
           <Text style={styles.judgmentText}>"{judgment}"</Text>
@@ -132,6 +159,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     fontStyle: 'italic',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  errorIcon: {
+    fontSize: 24,
+  },
+  errorText: {
+    fontSize: 13,
+    color: colors.error,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   judgmentText: {
     fontSize: 15,

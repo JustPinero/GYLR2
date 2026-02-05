@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,12 @@ import {
   setTimePeriod,
 } from '../store/settingsSlice';
 import { fetchCalendarEvents, selectEventsLoading } from '../store/eventsSlice';
+import {
+  requestJudgment,
+  selectCurrentJudgment,
+  selectJudgmentLoading,
+  selectJudgmentError,
+} from '../store/judgmentSlice';
 import {
   TimePeriodSelector,
   TimeAllocationChart,
@@ -38,9 +44,10 @@ export function LifeScreen(): React.JSX.Element {
     categorizedEventCount,
   } = useTimeAllocation();
 
-  // Placeholder state for judgment (will be replaced in Phase 6)
-  const [judgment, setJudgment] = useState<string | null>(null);
-  const [judgmentLoading, setJudgmentLoading] = useState(false);
+  // Judgment state from Redux
+  const judgment = useAppSelector(selectCurrentJudgment);
+  const judgmentLoading = useAppSelector(selectJudgmentLoading);
+  const judgmentError = useAppSelector(selectJudgmentError);
 
   const handleTimePeriodChange = (period: TimePeriod): void => {
     dispatch(setTimePeriod(period));
@@ -52,17 +59,15 @@ export function LifeScreen(): React.JSX.Element {
     }
   }, [dispatch, accessToken, timePeriod]);
 
-  const handleRequestJudgment = (): void => {
-    // Placeholder - will be replaced with Claude API call in Phase 6
-    setJudgmentLoading(true);
-    setTimeout(() => {
-      setJudgment(
-        "Looks like you're spending most of your time on work. Classic. " +
-        "Maybe consider that 'Play' category once in a while? Just a thought."
-      );
-      setJudgmentLoading(false);
-    }, 1500);
-  };
+  const handleRequestJudgment = useCallback((): void => {
+    dispatch(
+      requestJudgment({
+        allocations,
+        timePeriod,
+        personality,
+      })
+    );
+  }, [dispatch, allocations, timePeriod, personality]);
 
   const handleGoToCalendar = (): void => {
     navigation.navigate('Calendar' as never);
@@ -164,6 +169,7 @@ export function LifeScreen(): React.JSX.Element {
           <JudgmentCard
             judgment={judgment}
             loading={judgmentLoading}
+            error={judgmentError}
             onRequestJudgment={handleRequestJudgment}
             personality={personality}
             disabled={isEmpty}

@@ -2,12 +2,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import { eventsReducer } from './eventsSlice';
 import { categoriesReducer } from './categoriesSlice';
 import { settingsReducer } from './settingsSlice';
+import judgmentReducer from './judgmentSlice';
 
 export const store = configureStore({
   reducer: {
     events: eventsReducer,
     categories: categoriesReducer,
     settings: settingsReducer,
+    judgment: judgmentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
