@@ -8,3 +8,7 @@ export { DateSectionHeader } from './DateSectionHeader';
 export { FloatingActionButton } from './FloatingActionButton';
 export { AddEventModal } from './AddEventModal';
 export type { EventFormData } from './AddEventModal';
+export { TimeAllocationChart } from './TimeAllocationChart';
+export { CategoryLegend } from './CategoryLegend';
+export { StatsSummary } from './StatsSummary';
+export { JudgmentCard } from './JudgmentCard';
