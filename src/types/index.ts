@@ -56,3 +56,63 @@ export type RootTabParamList = {
   Calendar: undefined;
   Life: undefined;
 };
+
+// ============================================
+// Google Calendar API Types
+// ============================================
+
+// Google Calendar event datetime
+export interface GoogleDateTime {
+  dateTime?: string; // ISO 8601 for timed events
+  date?: string; // YYYY-MM-DD for all-day events
+  timeZone?: string;
+}
+
+// Raw Google Calendar event from API
+export interface GoogleCalendarEvent {
+  id: string;
+  summary?: string;
+  description?: string;
+  start: GoogleDateTime;
+  end: GoogleDateTime;
+  status: 'confirmed' | 'tentative' | 'cancelled';
+  htmlLink?: string;
+  created?: string;
+  updated?: string;
+}
+
+// Google Calendar list response
+export interface GoogleCalendarListResponse {
+  kind: string;
+  items: GoogleCalendarEvent[];
+  nextPageToken?: string;
+  nextSyncToken?: string;
+}
+
+// Event creation payload
+export interface CreateEventPayload {
+  summary: string;
+  description?: string;
+  start: GoogleDateTime;
+  end: GoogleDateTime;
+}
+
+// ============================================
+// Auth Types
+// ============================================
+
+// Stored authentication tokens
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: number; // Unix timestamp in milliseconds
+  idToken?: string;
+}
+
+// Google user profile info
+export interface GoogleUserInfo {
+  id: string;
+  email: string;
+  name?: string;
+  picture?: string;
+}
