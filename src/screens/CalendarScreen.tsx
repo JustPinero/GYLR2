@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,33 +13,34 @@ import {
   selectAllEvents,
   selectEventsLoading,
   selectEventsError,
+  selectUncategorizedEvents,
   fetchCalendarEvents,
+  updateEventCategory,
 } from '../store/eventsSlice';
 import {
   selectAccessToken,
   selectTimePeriod,
 } from '../store/settingsSlice';
+import { saveMapping } from '../store/categoriesSlice';
+import { CategoryPicker, UncategorizedBanner, CategoryBadge } from '../components';
 import { CategorizedEvent, Category } from '../types';
+import { extractPattern } from '../services/categorization';
 import { formatDateShort, formatTime, formatDuration, getDurationMinutes } from '../utils/dateUtils';
 import { colors } from '../constants/colors';
-
-// Category color mapping
-const categoryColors: Record<Category, string> = {
-  [Category.WORK]: colors.work,
-  [Category.PLAY]: colors.play,
-  [Category.HEALTH]: colors.health,
-  [Category.ROMANCE]: colors.romance,
-  [Category.STUDY]: colors.study,
-  [Category.UNCATEGORIZED]: colors.uncategorized,
-};
 
 export function CalendarScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const events = useAppSelector(selectAllEvents);
+  const uncategorizedEvents = useAppSelector(selectUncategorizedEvents);
   const loading = useAppSelector(selectEventsLoading);
   const error = useAppSelector(selectEventsError);
   const accessToken = useAppSelector(selectAccessToken);
   const timePeriod = useAppSelector(selectTimePeriod);
+
+  // Modal state
+  const [selectedEvent, setSelectedEvent] = useState<CategorizedEvent | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const loadEvents = useCallback(() => {
     if (accessToken) {
@@ -51,8 +52,61 @@ export function CalendarScreen(): React.JSX.Element {
     loadEvents();
   }, [loadEvents]);
 
+  // Reset banner dismissed state when uncategorized count changes
+  useEffect(() => {
+    if (uncategorizedEvents.length > 0) {
+      setBannerDismissed(false);
+    }
+  }, [uncategorizedEvents.length]);
+
+  const handleEventPress = (event: CategorizedEvent): void => {
+    setSelectedEvent(event);
+    setPickerVisible(true);
+  };
+
+  const handleCategorySelect = (category: Category, remember: boolean): void => {
+    if (!selectedEvent) return;
+
+    // Update the event category in Redux
+    dispatch(updateEventCategory({
+      eventId: selectedEvent.id,
+      category,
+    }));
+
+    // If remember is checked, save the mapping
+    if (remember) {
+      const pattern = extractPattern(selectedEvent.title);
+      if (pattern) {
+        dispatch(saveMapping({ pattern, category }));
+      }
+    }
+
+    setPickerVisible(false);
+    setSelectedEvent(null);
+  };
+
+  const handlePickerClose = (): void => {
+    setPickerVisible(false);
+    setSelectedEvent(null);
+  };
+
+  const handleBannerPress = (): void => {
+    // Open picker for the first uncategorized event
+    if (uncategorizedEvents.length > 0) {
+      const firstUncategorized = uncategorizedEvents[0];
+      if (firstUncategorized) {
+        setSelectedEvent(firstUncategorized);
+        setPickerVisible(true);
+      }
+    }
+  };
+
+  const handleBannerDismiss = (): void => {
+    setBannerDismissed(true);
+  };
+
   const renderEvent = ({ item }: { item: CategorizedEvent }): React.JSX.Element => (
-    <EventCard event={item} />
+    <EventCard event={item} onPress={() => handleEventPress(item)} />
   );
 
   const renderEmptyState = (): React.JSX.Element => (
@@ -94,6 +148,15 @@ export function CalendarScreen(): React.JSX.Element {
         </Text>
       </View>
 
+      {/* Uncategorized Banner */}
+      {!bannerDismissed && (
+        <UncategorizedBanner
+          count={uncategorizedEvents.length}
+          onPress={handleBannerPress}
+          onDismiss={handleBannerDismiss}
+        />
+      )}
+
       <FlatList
         data={events}
         renderItem={renderEvent}
@@ -113,21 +176,32 @@ export function CalendarScreen(): React.JSX.Element {
         }
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Category Picker Modal */}
+      <CategoryPicker
+        visible={pickerVisible}
+        event={selectedEvent}
+        onSelect={handleCategorySelect}
+        onClose={handlePickerClose}
+      />
     </SafeAreaView>
   );
 }
 
 interface EventCardProps {
   event: CategorizedEvent;
+  onPress: () => void;
 }
 
-function EventCard({ event }: EventCardProps): React.JSX.Element {
-  const categoryColor = categoryColors[event.category];
+function EventCard({ event, onPress }: EventCardProps): React.JSX.Element {
   const duration = getDurationMinutes(event.startTime, event.endTime);
 
   return (
-    <View style={styles.eventCard}>
-      <View style={[styles.categoryIndicator, { backgroundColor: categoryColor }]} />
+    <TouchableOpacity
+      style={styles.eventCard}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={styles.eventContent}>
         <Text style={styles.eventTitle} numberOfLines={1}>
           {event.title}
@@ -144,15 +218,16 @@ function EventCard({ event }: EventCardProps): React.JSX.Element {
         </View>
         <Text style={styles.eventDate}>{formatDateShort(event.startTime)}</Text>
       </View>
-      <View style={styles.categoryBadge}>
-        <Text style={[styles.categoryText, { color: categoryColor }]}>
-          {event.category.toUpperCase()}
-        </Text>
-        {!event.categoryConfirmed && (
-          <Text style={styles.unconfirmedIndicator}>?</Text>
-        )}
+      <View style={styles.categoryContainer}>
+        <CategoryBadge
+          category={event.category}
+          confirmed={event.categoryConfirmed}
+          size="small"
+          showIcon={true}
+          showLabel={false}
+        />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -249,9 +324,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: 'hidden',
   },
-  categoryIndicator: {
-    width: 6,
-  },
   eventContent: {
     flex: 1,
     padding: 12,
@@ -284,20 +356,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
-  categoryBadge: {
+  categoryContainer: {
     padding: 12,
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'center',
-  },
-  categoryText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  unconfirmedIndicator: {
-    fontSize: 12,
-    color: colors.warning,
-    fontWeight: 'bold',
-    marginTop: 2,
   },
 });

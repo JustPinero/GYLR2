@@ -16,6 +16,7 @@ import {
   setUserInfo,
   setAuthLoading,
 } from './src/store/settingsSlice';
+import { loadStoredMappings } from './src/store/categoriesSlice';
 import { getStoredTokens, getStoredUserInfo, isTokenExpired, refreshAccessToken } from './src/services/googleAuth';
 import { colors } from './src/constants/colors';
 
@@ -86,6 +87,9 @@ function AppContent(): React.JSX.Element {
             if (userInfo) {
               dispatch(setUserInfo({ email: userInfo.email, name: userInfo.name ?? null }));
             }
+
+            // Load stored category mappings
+            dispatch(loadStoredMappings());
           } else {
             // Refresh failed, user needs to re-auth
             dispatch(setAuthLoading(false));
@@ -107,6 +111,9 @@ function AppContent(): React.JSX.Element {
         if (userInfo) {
           dispatch(setUserInfo({ email: userInfo.email, name: userInfo.name ?? null }));
         }
+
+        // Load stored category mappings
+        dispatch(loadStoredMappings());
       }
     } catch (error) {
       console.error('Error checking stored auth:', error);
