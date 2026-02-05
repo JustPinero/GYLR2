@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Get Your Life Right",
+    "slug": "gylr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2C2137"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gylr.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2C2137"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.gylr.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
