@@ -30,7 +30,6 @@ A React Native mobile app that connects to your Google Calendar, categorizes you
 
 - Node.js 18+
 - npm or yarn
-- Expo CLI (`npm install -g expo-cli`)
 - iOS Simulator (Mac) or Android Emulator
 - Google Cloud Console project with Calendar API enabled
 - Anthropic API key for Claude
@@ -50,14 +49,15 @@ A React Native mobile app that connects to your Google Calendar, categorizes you
 
 3. **Configure environment variables**
 
-   Copy the example environment file and add your API keys:
+   Copy the example environment file:
    ```bash
    cp .env.example .env
    ```
 
-   Edit `.env` with your credentials:
+   Edit `.env` with your credentials (see setup sections below for how to obtain these):
    ```
-   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_google_client_id
+   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your_web_client_id
+   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET=your_web_client_secret
    EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your_ios_client_id
    EXPO_PUBLIC_ANTHROPIC_API_KEY=your_claude_api_key
    ```
@@ -67,26 +67,66 @@ A React Native mobile app that connects to your Google Calendar, categorizes you
    npx expo start
    ```
 
-5. **Run on your device**
-   - Press `i` for iOS Simulator
-   - Press `a` for Android Emulator
-   - Scan QR code with Expo Go app for physical device
-
 ### Setting Up Google OAuth
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable the **Google Calendar API**
-4. Go to **Credentials** > **Create Credentials** > **OAuth 2.0 Client ID**
-5. For Web application, add authorized redirect URI: `https://auth.expo.io/@your-username/gylr`
-6. For iOS, create an iOS client ID with your bundle identifier
-7. Copy the client IDs to your `.env` file
+1. **Create a Google Cloud Project**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the **Google Calendar API** (APIs & Services > Library)
+
+2. **Configure OAuth Consent Screen**
+   - Go to APIs & Services > OAuth consent screen
+   - Choose "External" user type
+   - Fill in app name, support email, and developer email
+   - Add scopes: `email`, `profile`, `openid`, and Google Calendar scopes
+   - Add your email as a test user (required while app is in testing mode)
+
+3. **Create OAuth Credentials**
+
+   **For Web (required for web testing):**
+   - Go to Credentials > Create Credentials > OAuth client ID
+   - Application type: **Web application**
+   - Add authorized redirect URI: `http://localhost:8081/oauth`
+   - Copy the **Client ID** and **Client Secret** to your `.env`
+
+   **For iOS (required for iOS builds):**
+   - Go to Credentials > Create Credentials > OAuth client ID
+   - Application type: **iOS**
+   - Bundle ID: `com.gylr.app`
+   - Copy the **Client ID** to your `.env`
 
 ### Setting Up Claude API
 
 1. Go to [Anthropic Console](https://console.anthropic.com/)
 2. Create an API key
 3. Add it to your `.env` file as `EXPO_PUBLIC_ANTHROPIC_API_KEY`
+
+### Running the App
+
+**For Web (quickest for testing):**
+```bash
+npx expo start --web
+```
+
+**For iOS Simulator (requires development build):**
+
+Due to OAuth requirements, you need a development build for iOS:
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+eas login
+
+# Build development client for iOS simulator
+eas build --profile development --platform ios
+
+# Download and install the build, then run:
+npx expo start --dev-client
+```
+
+**For Android:**
+```bash
+npx expo start --android
+```
 
 ## How to Use
 
@@ -127,6 +167,8 @@ In the Settings tab you can:
 ```
 GYLR2/
 ├── App.tsx                 # App entry point
+├── app.json                # Expo static configuration
+├── app.config.js           # Expo dynamic configuration
 ├── src/
 │   ├── components/         # Reusable UI components
 │   │   ├── PixelButton.tsx
@@ -154,25 +196,26 @@ GYLR2/
 │   │   ├── categorization.ts
 │   │   └── claude.ts
 │   ├── hooks/              # Custom React hooks
+│   ├── config/             # App configuration
 │   ├── constants/          # Colors, fonts, prompts
 │   ├── types/              # TypeScript type definitions
 │   └── utils/              # Utility functions
 ├── assets/                 # Images, fonts, icons
-├── docs/                   # Documentation
-│   └── privacy-policy.md
-└── requests/               # Implementation plans
+└── docs/                   # Documentation
+    └── privacy-policy.md
 ```
 
 ## Tech Stack
 
-- **Framework**: React Native with Expo
+- **Framework**: React Native with Expo (SDK 54)
 - **Language**: TypeScript
 - **State Management**: Redux Toolkit
 - **Navigation**: React Navigation (Bottom Tabs)
 - **Storage**: AsyncStorage
 - **Charts**: react-native-svg (custom donut chart)
 - **Authentication**: expo-auth-session (Google OAuth)
-- **AI**: Anthropic Claude API
+- **AI**: Anthropic Claude API (claude-3-haiku)
+- **Haptics**: expo-haptics
 
 ## Building for Production
 
@@ -209,6 +252,15 @@ eas submit --platform ios
 eas submit --platform android
 ```
 
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google OAuth Web Client ID | Yes |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET` | Google OAuth Web Client Secret | Yes (for web) |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google OAuth iOS Client ID | Yes (for iOS) |
+| `EXPO_PUBLIC_ANTHROPIC_API_KEY` | Anthropic Claude API Key | Yes |
+
 ## Contributing
 
 1. Fork the repository
@@ -224,6 +276,22 @@ GYLR respects your privacy:
 - Only aggregated time percentages are sent to Claude AI for roasts
 - No personal event details are stored on external servers
 - See our full [Privacy Policy](./docs/privacy-policy.md)
+
+## Troubleshooting
+
+### OAuth Error 400: redirect_uri_mismatch
+Make sure the redirect URI in your Google Console matches exactly:
+- Web: `http://localhost:8081/oauth`
+- iOS: Uses reversed client ID scheme (handled automatically)
+
+### OAuth Error 403: access_denied
+Add your email as a test user in Google Console > OAuth consent screen > Test users
+
+### CORS errors on web
+The Claude API doesn't support browser requests directly. AI roasts work on iOS/Android builds but not on web.
+
+### Build fails with expo-dev-client error
+Run `npx expo install expo-dev-client` before building.
 
 ## License
 

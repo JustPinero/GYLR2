@@ -1,8 +1,17 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { googleConfig, getRedirectUri } from '../config/google';
 import { AuthTokens, GoogleUserInfo } from '../types';
+
+// Use iOS client ID on iOS, web client ID elsewhere
+const getClientId = (): string => {
+  if (Platform.OS === 'ios' && googleConfig.iosClientId) {
+    return googleConfig.iosClientId;
+  }
+  return googleConfig.webClientId;
+};
 
 // Complete any pending auth sessions
 WebBrowser.maybeCompleteAuthSession();
@@ -25,7 +34,7 @@ const discovery: AuthSession.DiscoveryDocument = {
  */
 function createAuthRequest(): AuthSession.AuthRequest {
   return new AuthSession.AuthRequest({
-    clientId: googleConfig.webClientId,
+    clientId: getClientId(),
     scopes: googleConfig.scopes,
     redirectUri: getRedirectUri(),
     usePKCE: true,
@@ -43,24 +52,43 @@ function createAuthRequest(): AuthSession.AuthRequest {
 export async function signInWithGoogle(): Promise<AuthTokens | null> {
   try {
     const request = createAuthRequest();
+    console.log('Starting OAuth flow...');
+    console.log('Redirect URI:', getRedirectUri());
+
     const result = await request.promptAsync(discovery);
+    console.log('OAuth result type:', result.type);
+    console.log('OAuth result:', JSON.stringify(result, null, 2));
 
     if (result.type !== 'success' || !result.params['code']) {
+      console.log('OAuth failed or cancelled');
       return null;
     }
 
+    console.log('Got authorization code, exchanging for tokens...');
+
     // Exchange code for tokens
-    const tokenResponse = await AuthSession.exchangeCodeAsync(
-      {
-        clientId: googleConfig.webClientId,
-        code: result.params['code'],
-        redirectUri: getRedirectUri(),
-        extraParams: {
-          code_verifier: request.codeVerifier ?? '',
-        },
+    // iOS doesn't need client secret (uses bundle ID verification)
+    // Web requires client secret
+    const tokenRequest: AuthSession.AccessTokenRequestConfig = {
+      clientId: getClientId(),
+      code: result.params['code'],
+      redirectUri: getRedirectUri(),
+      extraParams: {
+        code_verifier: request.codeVerifier ?? '',
       },
+    };
+
+    // Only include client secret for web (iOS uses PKCE without secret)
+    if (Platform.OS === 'web' && googleConfig.webClientSecret) {
+      tokenRequest.clientSecret = googleConfig.webClientSecret;
+    }
+
+    const tokenResponse = await AuthSession.exchangeCodeAsync(
+      tokenRequest,
       discovery
     );
+
+    console.log('Token exchange successful');
 
     const tokens: AuthTokens = {
       accessToken: tokenResponse.accessToken,
@@ -80,6 +108,10 @@ export async function signInWithGoogle(): Promise<AuthTokens | null> {
     return tokens;
   } catch (error) {
     console.error('Google sign in error:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return null;
   }
 }
@@ -93,7 +125,7 @@ export async function refreshAccessToken(
   try {
     const tokenResponse = await AuthSession.refreshAsync(
       {
-        clientId: googleConfig.webClientId,
+        clientId: getClientId(),
         refreshToken,
       },
       discovery

@@ -54,9 +54,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "b26f3e5a-ae75-4f56-84e8-a56ab9f239bb"
       }
     },
-    "owner": "your-expo-username"
+    "owner": "dravod"
   }
 }
